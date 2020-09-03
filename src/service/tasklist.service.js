@@ -22,9 +22,15 @@ const toggleTaskComplete = (taskListId, taskId) => {
     return axios.put(API_URL + `/${taskListId}/${taskId}/toggle_complete`);
 };
 
+const deleteTask = (taskListId, taskId) => {
+    console.log(API_URL + `/${taskListId}/${taskId}/delete`);
+    return axios.delete(API_URL + `/${taskListId}/${taskId}/delete`);
+};
+
 export default {
     getUniverseTaskList,
     getWikiTaskList,
     addTask,
     toggleTaskComplete,
+    deleteTask,
 };

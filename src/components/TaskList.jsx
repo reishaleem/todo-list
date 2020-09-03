@@ -91,6 +91,31 @@ export default () => {
         );
     }
 
+    function onDeleteTask(taskId) {
+        setTaskListLoaded(false);
+
+        TaskService.deleteTask(taskList.id, taskId).then(
+            (response) => {
+                setMessage(response.data.message);
+                setSuccessful(true);
+                setTaskList(response.data);
+                console.log(response);
+                setTaskListLoaded(true);
+            },
+            (error) => {
+                const resMessage =
+                    (error.response &&
+                        error.response.data &&
+                        error.response.data.message) ||
+                    error.message ||
+                    error.toString();
+
+                setMessage(resMessage);
+                setSuccessful(false);
+            }
+        );
+    }
+
     return (
         <Container fluid>
             <Form onSubmit={handleSubmit(onCreateNewTask)}>
@@ -131,6 +156,7 @@ export default () => {
                             onSetComplete={(data) =>
                                 onSetTaskComplete(data, task.id)
                             }
+                            onDelete={() => onDeleteTask(task.id)}
                             key={i}
                         />
                     );
