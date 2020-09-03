@@ -20,13 +20,13 @@ export default () => {
     const [successful, setSuccessful] = useState(false);
     const [message, setMessage] = useState("");
 
-    // useEffect(() => {
-    //     TaskService.getUniverseTaskList(4).then((response) => {
-    //         setTaskList(response.data);
-    //         setTaskListLoading(false);
-    //         setTaskListLoaded(true);
-    //     });
-    // }, []);
+    useEffect(() => {
+        TaskService.getUniverseTaskList(4).then((response) => {
+            setTaskList(response.data);
+            setTaskListLoading(false);
+            setTaskListLoaded(true);
+        });
+    }, []);
 
     function onChangeNewTaskName(e) {
         setNewTaskName(e.target.value);
@@ -35,10 +35,60 @@ export default () => {
     // we would call the task service instead of this
     function onCreateNewTask(data) {
         setTaskListLoaded(false);
-        let currentList = taskList;
-        currentList.tasks.push({ id: "3", task: data.newTaskName });
-        setTaskList(currentList);
-        setTaskListLoaded(true);
+
+        TaskService.addTask(
+            taskList.id,
+            data.newTaskName,
+            "Implement later",
+            false
+        ).then(
+            (response) => {
+                setMessage(response.data.message);
+                setSuccessful(true);
+                setTaskList(response.data);
+                console.log(response);
+                setTaskListLoaded(true);
+            },
+            (error) => {
+                const resMessage =
+                    (error.response &&
+                        error.response.data &&
+                        error.response.data.message) ||
+                    error.message ||
+                    error.toString();
+
+                setMessage(resMessage);
+                setSuccessful(false);
+            }
+        );
+    }
+
+    // we would call the task service. We have the task list id, with taskList, then we send the id of the specific task here
+    // the question here is whether this would be the delete or if it would be the set complete....ie if we want a 'completed'
+    // section separate from the deleted
+    function onSetTaskComplete(data, taskId) {
+        setTaskListLoaded(false);
+
+        TaskService.toggleTaskComplete(taskList.id, taskId).then(
+            (response) => {
+                setMessage(response.data.message);
+                setSuccessful(true);
+                setTaskList(response.data);
+                console.log(response);
+                setTaskListLoaded(true);
+            },
+            (error) => {
+                const resMessage =
+                    (error.response &&
+                        error.response.data &&
+                        error.response.data.message) ||
+                    error.message ||
+                    error.toString();
+
+                setMessage(resMessage);
+                setSuccessful(false);
+            }
+        );
     }
 
     return (
@@ -75,7 +125,15 @@ export default () => {
             {taskListLoaded &&
                 taskList.tasks &&
                 taskList.tasks.map((task, i) => {
-                    return <Task taskName={task.task} key={i} />;
+                    return (
+                        <Task
+                            taskName={task.task}
+                            onSetComplete={(data) =>
+                                onSetTaskComplete(data, task.id)
+                            }
+                            key={i}
+                        />
+                    );
                 })}
         </Container>
     );

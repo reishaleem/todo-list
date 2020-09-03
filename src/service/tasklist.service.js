@@ -18,8 +18,13 @@ const addTask = (taskListId, task, dueDate, pinned) => {
     });
 };
 
+const toggleTaskComplete = (taskListId, taskId) => {
+    return axios.put(API_URL + `/${taskListId}/${taskId}/toggle_complete`);
+};
+
 export default {
     getUniverseTaskList,
     getWikiTaskList,
     addTask,
+    toggleTaskComplete,
 };
