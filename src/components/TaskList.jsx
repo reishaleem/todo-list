@@ -365,8 +365,7 @@ export default () => {
                                         // WE NEED TO ADD THE PARAMETER FOR LIST THE TASK WAS ON FOR ON SET COMPLETE AND ON DELETE AND STUFF FOR EVERYTHING
                                         return (
                                             <Task
-                                                taskName={task.task}
-                                                taskDueDate={task.dueDate}
+                                                task={task}
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
@@ -392,8 +391,7 @@ export default () => {
                                     overDueTaskList.map((task, i) => {
                                         return (
                                             <Task
-                                                taskName={task.task}
-                                                taskDueDate={task.dueDate}
+                                                task={task}
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
@@ -419,8 +417,7 @@ export default () => {
                                     priorityTaskList.map((task, i) => {
                                         return (
                                             <Task
-                                                taskName={task.task}
-                                                taskDueDate={task.dueDate}
+                                                task={task}
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
@@ -447,8 +444,7 @@ export default () => {
                                     shortTermTaskList.map((task, i) => {
                                         return (
                                             <Task
-                                                taskName={task.task}
-                                                taskDueDate={task.dueDate}
+                                                task={task}
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
@@ -475,8 +471,7 @@ export default () => {
                                     longTermTaskList.map((task, i) => {
                                         return (
                                             <Task
-                                                taskName={task.task}
-                                                taskDueDate={task.dueDate}
+                                                task={task}
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
@@ -503,8 +498,7 @@ export default () => {
                                     completedTaskList.map((task, i) => {
                                         return (
                                             <Task
-                                                taskName={task.task}
-                                                taskDueDate={task.dueDate}
+                                                task={task}
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
