@@ -2,7 +2,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { Form, ListGroup, Button } from "react-bootstrap";
 
-export default ({ taskName, onSetComplete, onDelete }) => {
+export default ({ taskName, taskDueDate, onSetComplete, onDelete }) => {
     const { register, handleSubmit, errors } = useForm();
 
     return (
@@ -13,7 +13,7 @@ export default ({ taskName, onSetComplete, onDelete }) => {
             <Button type="submit" variant="danger" onClick={onDelete}>
                 D
             </Button>
-            <p>{taskName}</p>
+            <p>{taskName + " | " + taskDueDate}</p>
         </ListGroup.Item>
     );
 };

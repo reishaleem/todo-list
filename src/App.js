@@ -4,16 +4,12 @@ import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import TaskList from "./components/TaskList";
 import { Card, Container } from "react-bootstrap";
+import useScript from "./hooks/useScript";
 
 function App() {
     return (
         <Container>
-            <Card>
-                <Card.Header>TODO</Card.Header>
-                <Card.Body>
-                    <TaskList />
-                </Card.Body>
-            </Card>
+            <TaskList />
         </Container>
     );
 }
