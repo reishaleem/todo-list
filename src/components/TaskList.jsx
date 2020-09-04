@@ -17,6 +17,7 @@ import Task from "./Task";
 import DatePicker from "./DatePicker";
 import ReactDatePicker from "react-datepicker";
 import moment from "moment";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export default () => {
     const { register, handleSubmit, control, errors } = useForm();
@@ -254,6 +255,38 @@ export default () => {
         );
     }
 
+    function onSetTaskPinned(data, taskId, listTaskWasIn, listTaskWasInName) {
+        setTaskListLoaded(false);
+
+        TaskService.toggleTaskPinned(taskList.id, taskId).then(
+            (response) => {
+                setMessage(response.data.message);
+                setSuccessful(true);
+                setTaskList(response.data);
+                //setCategorizedLists(response.data); // can't do this, or we just add a bunch of duplicates. Need to implement a method where it finds the list that the task WAS on, removes it, then adds it to its new list. It's similar to the one we have, but it takes just ONE task, not a whole list
+                // should *maybe* add a check on this filter to ensure it only has length one, even though we know for sure it will be true?
+                reCategorizeSingleTask(
+                    response.data.tasks.filter((task) => task.id === taskId)[0],
+                    listTaskWasIn,
+                    listTaskWasInName
+                );
+                console.log(response);
+                setTaskListLoaded(true);
+            },
+            (error) => {
+                const resMessage =
+                    (error.response &&
+                        error.response.data &&
+                        error.response.data.message) ||
+                    error.message ||
+                    error.toString();
+
+                setMessage(resMessage);
+                setSuccessful(false);
+            }
+        );
+    }
+
     function onDeleteTask(taskId, listTaskWasIn, listTaskWasInName) {
         setTaskListLoaded(false);
 
@@ -280,250 +313,300 @@ export default () => {
         );
     }
 
-    return (
-        <Container fluid>
-            <Tab.Container id="todo-pills" defaultActiveKey="priority">
-                <Card>
-                    <Card.Header>
-                        <Nav variant="pills">
-                            <Nav.Item>
-                                <Nav.Link eventKey="priority">
-                                    Priority
-                                </Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link eventKey="short">Short Term</Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link eventKey="long">Long Term</Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link eventKey="completed">
-                                    Completed
-                                </Nav.Link>
-                            </Nav.Item>
-                        </Nav>
-                    </Card.Header>
+    // NOTE: You cannot be pinned when you are set complete, so we need to make sure that we make it so you can't pin a complete task, and when u set complete, it sets pinned to false
 
-                    <Card.Body>
-                        <Form onSubmit={handleSubmit(onCreateNewTask)}>
-                            <Form.Row>
-                                <Col md={9}>
-                                    <Form.Control
-                                        type="text"
-                                        name="newTaskName"
-                                        placeholder="add new task"
-                                        value={newTaskName}
-                                        onChange={onChangeNewTaskName}
-                                        ref={register({
-                                            required: true,
-                                            maxLength: 50,
-                                        })}
-                                    />
-                                    {errors.newTaskName && (
-                                        <Form.Text>
-                                            This field is required
-                                        </Form.Text>
+    return (
+        <Tab.Container
+            id="todo-pills"
+            defaultActiveKey="priority"
+            className="align-middle"
+        >
+            <Card style={{ width: "30rem" }} className="align-middle mx-auto">
+                <Card.Header>
+                    <Nav variant="pills">
+                        <Nav.Item>
+                            <Nav.Link eventKey="priority">Priority</Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                            <Nav.Link eventKey="short">Short Term</Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                            <Nav.Link eventKey="long">Long Term</Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                            <Nav.Link eventKey="completed">Completed</Nav.Link>
+                        </Nav.Item>
+                    </Nav>
+                </Card.Header>
+
+                <Card.Body>
+                    <Form onSubmit={handleSubmit(onCreateNewTask)}>
+                        <Form.Row>
+                            <Col md={8}>
+                                <Form.Control
+                                    type="text"
+                                    name="newTaskName"
+                                    placeholder="add new task"
+                                    maxLength="50"
+                                    value={newTaskName}
+                                    onChange={onChangeNewTaskName}
+                                    ref={register({
+                                        required: true,
+                                        maxLength: 50,
+                                    })}
+                                />
+                                {errors.newTaskName && (
+                                    <Form.Text>
+                                        This field is required
+                                    </Form.Text>
+                                )}
+                            </Col>
+                            <Col md={3}>
+                                <Controller
+                                    control={control}
+                                    name="newTaskDueDate"
+                                    render={({ onChange, onBlur, value }) => (
+                                        <ReactDatePicker
+                                            onChange={onChange}
+                                            onBlur={onBlur}
+                                            selected={value}
+                                            dateFormat="MMM/dd"
+                                            className="form-control"
+                                            isClearable
+                                            placeholderText="due"
+                                        />
                                     )}
-                                </Col>
-                                <Col md={2}>
-                                    <Controller
-                                        control={control}
-                                        name="newTaskDueDate"
-                                        render={({
-                                            onChange,
-                                            onBlur,
-                                            value,
-                                        }) => (
-                                            <ReactDatePicker
-                                                onChange={onChange}
-                                                onBlur={onBlur}
-                                                selected={value}
-                                                className="form-control"
-                                                isClearable
-                                                placeholderText="Due date (optional)"
-                                            />
-                                        )}
-                                    />
-                                </Col>
-                                <Col md={1}>
-                                    <Button
-                                        variant="primary"
-                                        type="submit"
-                                        className="d-inline-block"
-                                    >
-                                        Create
-                                    </Button>
-                                </Col>
-                            </Form.Row>
-                        </Form>
-                        <Tab.Content>
-                            <Tab.Pane eventKey="priority">
-                                {taskListLoaded &&
-                                    taskList.tasks &&
-                                    pinnedTaskList.map((task, i) => {
-                                        // WE NEED TO ADD THE PARAMETER FOR LIST THE TASK WAS ON FOR ON SET COMPLETE AND ON DELETE AND STUFF FOR EVERYTHING
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        pinnedTaskList,
-                                                        "pinned"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        pinnedTaskList,
-                                                        "pinned"
-                                                    )
-                                                }
-                                                key={i}
-                                                className="pinned"
-                                            />
-                                        );
-                                    })}
-                                {taskListLoaded &&
-                                    taskList.tasks &&
-                                    overDueTaskList.map((task, i) => {
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        overDueTaskList,
-                                                        "overdue"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        overDueTaskList,
-                                                        "overdue"
-                                                    )
-                                                }
-                                                key={i}
-                                                className="overdue"
-                                            />
-                                        );
-                                    })}
-                                {taskListLoaded &&
-                                    taskList.tasks &&
-                                    priorityTaskList.map((task, i) => {
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        priorityTaskList,
-                                                        "priority"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        priorityTaskList,
-                                                        "priority"
-                                                    )
-                                                }
-                                                key={i}
-                                            />
-                                        );
-                                    })}
-                            </Tab.Pane>
-                            <Tab.Pane eventKey="short">
-                                {taskListLoaded &&
-                                    taskList.tasks &&
-                                    shortTermTaskList.map((task, i) => {
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        shortTermTaskList,
-                                                        "short"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        shortTermTaskList,
-                                                        "short"
-                                                    )
-                                                }
-                                                key={i}
-                                            />
-                                        );
-                                    })}
-                            </Tab.Pane>
-                            <Tab.Pane eventKey="long">
-                                {taskListLoaded &&
-                                    taskList.tasks &&
-                                    longTermTaskList.map((task, i) => {
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        longTermTaskList,
-                                                        "long"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        longTermTaskList,
-                                                        "long"
-                                                    )
-                                                }
-                                                key={i}
-                                            />
-                                        );
-                                    })}
-                            </Tab.Pane>
-                            <Tab.Pane eventKey="completed">
-                                {taskListLoaded &&
-                                    taskList.tasks &&
-                                    completedTaskList.map((task, i) => {
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        completedTaskList,
-                                                        "completed"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        completedTaskList,
-                                                        "completed"
-                                                    )
-                                                }
-                                                key={i}
-                                                className="completed"
-                                            />
-                                        );
-                                    })}
-                            </Tab.Pane>
-                        </Tab.Content>
-                    </Card.Body>
-                </Card>
-            </Tab.Container>
-        </Container>
+                                />
+                            </Col>
+                            <Col md={1}>
+                                <Button
+                                    variant="outline-dark"
+                                    type="submit"
+                                    style={{
+                                        padding: ".375rem .6rem",
+                                    }}
+                                >
+                                    <FontAwesomeIcon
+                                        icon="plus"
+                                        size="sm"
+                                    ></FontAwesomeIcon>
+                                </Button>
+                            </Col>
+                        </Form.Row>
+                    </Form>
+                    <Tab.Content>
+                        <Tab.Pane eventKey="priority">
+                            {taskListLoaded &&
+                                taskList.tasks &&
+                                pinnedTaskList.map((task, i) => {
+                                    return (
+                                        <Task
+                                            task={task}
+                                            onSetComplete={(data) =>
+                                                onSetTaskComplete(
+                                                    data,
+                                                    task.id,
+                                                    pinnedTaskList,
+                                                    "pinned"
+                                                )
+                                            }
+                                            onSetPinned={(data) =>
+                                                onSetTaskPinned(
+                                                    data,
+                                                    task.id,
+                                                    pinnedTaskList,
+                                                    "pinned"
+                                                )
+                                            }
+                                            onDelete={() =>
+                                                onDeleteTask(
+                                                    task.id,
+                                                    pinnedTaskList,
+                                                    "pinned"
+                                                )
+                                            }
+                                            key={i}
+                                            className="pinned"
+                                        />
+                                    );
+                                })}
+                            {taskListLoaded &&
+                                taskList.tasks &&
+                                overDueTaskList.map((task, i) => {
+                                    return (
+                                        <Task
+                                            task={task}
+                                            onSetComplete={(data) =>
+                                                onSetTaskComplete(
+                                                    data,
+                                                    task.id,
+                                                    overDueTaskList,
+                                                    "overdue"
+                                                )
+                                            }
+                                            onSetPinned={(data) =>
+                                                onSetTaskPinned(
+                                                    data,
+                                                    task.id,
+                                                    overDueTaskList,
+                                                    "overdue"
+                                                )
+                                            }
+                                            onDelete={() =>
+                                                onDeleteTask(
+                                                    task.id,
+                                                    overDueTaskList,
+                                                    "overdue"
+                                                )
+                                            }
+                                            key={i}
+                                            className="overdue"
+                                        />
+                                    );
+                                })}
+                            {taskListLoaded &&
+                                taskList.tasks &&
+                                priorityTaskList.map((task, i) => {
+                                    return (
+                                        <Task
+                                            task={task}
+                                            onSetComplete={(data) =>
+                                                onSetTaskComplete(
+                                                    data,
+                                                    task.id,
+                                                    priorityTaskList,
+                                                    "priority"
+                                                )
+                                            }
+                                            onSetPinned={(data) =>
+                                                onSetTaskPinned(
+                                                    data,
+                                                    task.id,
+                                                    priorityTaskList,
+                                                    "priority"
+                                                )
+                                            }
+                                            onDelete={() =>
+                                                onDeleteTask(
+                                                    task.id,
+                                                    priorityTaskList,
+                                                    "priority"
+                                                )
+                                            }
+                                            key={i}
+                                        />
+                                    );
+                                })}
+                        </Tab.Pane>
+                        <Tab.Pane eventKey="short">
+                            {taskListLoaded &&
+                                taskList.tasks &&
+                                shortTermTaskList.map((task, i) => {
+                                    return (
+                                        <Task
+                                            task={task}
+                                            onSetComplete={(data) =>
+                                                onSetTaskComplete(
+                                                    data,
+                                                    task.id,
+                                                    shortTermTaskList,
+                                                    "short"
+                                                )
+                                            }
+                                            onSetPinned={(data) =>
+                                                onSetTaskPinned(
+                                                    data,
+                                                    task.id,
+                                                    shortTermTaskList,
+                                                    "short"
+                                                )
+                                            }
+                                            onDelete={() =>
+                                                onDeleteTask(
+                                                    task.id,
+                                                    shortTermTaskList,
+                                                    "short"
+                                                )
+                                            }
+                                            key={i}
+                                        />
+                                    );
+                                })}
+                        </Tab.Pane>
+                        <Tab.Pane eventKey="long">
+                            {taskListLoaded &&
+                                taskList.tasks &&
+                                longTermTaskList.map((task, i) => {
+                                    return (
+                                        <Task
+                                            task={task}
+                                            onSetComplete={(data) =>
+                                                onSetTaskComplete(
+                                                    data,
+                                                    task.id,
+                                                    longTermTaskList,
+                                                    "long"
+                                                )
+                                            }
+                                            onSetPinned={(data) =>
+                                                onSetTaskPinned(
+                                                    data,
+                                                    task.id,
+                                                    longTermTaskList,
+                                                    "long"
+                                                )
+                                            }
+                                            onDelete={() =>
+                                                onDeleteTask(
+                                                    task.id,
+                                                    longTermTaskList,
+                                                    "long"
+                                                )
+                                            }
+                                            key={i}
+                                        />
+                                    );
+                                })}
+                        </Tab.Pane>
+                        <Tab.Pane eventKey="completed">
+                            {taskListLoaded &&
+                                taskList.tasks &&
+                                completedTaskList.map((task, i) => {
+                                    return (
+                                        <Task
+                                            task={task}
+                                            onSetComplete={(data) =>
+                                                onSetTaskComplete(
+                                                    data,
+                                                    task.id,
+                                                    completedTaskList,
+                                                    "completed"
+                                                )
+                                            }
+                                            onSetPinned={(data) =>
+                                                onSetTaskPinned(
+                                                    data,
+                                                    task.id,
+                                                    completedTaskList,
+                                                    "completed"
+                                                )
+                                            }
+                                            onDelete={() =>
+                                                onDeleteTask(
+                                                    task.id,
+                                                    completedTaskList,
+                                                    "completed"
+                                                )
+                                            }
+                                            key={i}
+                                            className="completed"
+                                        />
+                                    );
+                                })}
+                        </Tab.Pane>
+                    </Tab.Content>
+                </Card.Body>
+            </Card>
+        </Tab.Container>
     );
 };

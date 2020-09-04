@@ -91,3 +91,7 @@
     line-height: 70px;
     font-size: 1.3rem;
 }
+
+.spacer {
+    flex-grow: 1 !important;
+}

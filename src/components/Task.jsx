@@ -8,24 +8,25 @@ import {
     ButtonGroup,
 } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import moment from "moment";
 
-export default ({ task, onSetComplete, onDelete }) => {
+export default ({ task, onSetComplete, onDelete, onSetPinned }) => {
     const { register, handleSubmit, errors } = useForm();
 
     const [checked, setChecked] = useState(task.complete);
     const [pinned, setPinned] = useState(task.pinned);
     const [showExtras, setShowExtras] = useState(false);
-    // trying to figure out what to do about hover. Just got it working where when you hover over a value,
-    //its extras will show up. Next we can add being pinned by clicking the pin, and the pin will then always show up.
-    //Will need to configure back end too
-    // then we can figure out about formatting the whole spacing, then lastly, we can see about fading a task out, rather than abruptly going to Completed or Deleted
+
+    // we can see about fading a task out, rather than abruptly going to Completed or Deleted
+    // also need to deal with the settings (ie editing the task name and due date. Maybe we just do some sort of onDoubleClick?)
+    // also need to add pagination
     return (
         <ListGroup.Item
-            className="border-0 d-flex"
+            className="border-0 d-flex align-items-center"
             onMouseEnter={() => setShowExtras(true)}
             onMouseLeave={() => setShowExtras(false)}
         >
-            <ButtonGroup toggle className="mb-2">
+            <ButtonGroup toggle>
                 <ToggleButton
                     type="checkbox"
                     variant="outline-dark"
@@ -35,9 +36,9 @@ export default ({ task, onSetComplete, onDelete }) => {
                     onClick={onSetComplete}
                     className="check-box"
                     style={{
-                        width: "35px",
-                        height: "35px",
-                        lineHeight: "35px",
+                        width: "25px",
+                        height: "25px",
+                        lineHeight: "25px",
                         fontSize: "0.9rem",
                         textAlign: "center",
                         padding: "0",
@@ -45,33 +46,100 @@ export default ({ task, onSetComplete, onDelete }) => {
                 ></ToggleButton>
             </ButtonGroup>
 
-            <p className={`px-2 ${task.complete ? "complete " : ""}`}>
-                {task.task + " | " + task.dueDate}
+            <p className={`px-3 my-0 ${task.complete ? "complete " : ""}`}>
+                {task.task + " "}
+                <br />
+                <small className="text-muted">
+                    {moment(task.dueDate).format("MMM Do")}
+                </small>
             </p>
 
-            {showExtras && (
+            <div className="spacer"></div>
+
+            {task.pinned ? (
                 <>
-                    <span className="clickable-icon mr-2">
+                    <span className="clickable-icon mr-2" onClick={onSetPinned}>
                         <FontAwesomeIcon
                             icon="thumbtack"
                             size="lg"
-                            pull="right"
                         ></FontAwesomeIcon>
                     </span>
-                    <span className="clickable-icon mr-2">
-                        <FontAwesomeIcon
-                            icon="cog"
-                            size="lg"
-                            pull="right"
-                        ></FontAwesomeIcon>
-                    </span>
-                    <span className="clickable-icon" onClick={onDelete}>
-                        <FontAwesomeIcon
-                            icon="trash-alt"
-                            size="lg"
-                            pull="right"
-                        ></FontAwesomeIcon>
-                    </span>
+                    {showExtras && (
+                        <>
+                            <span className="clickable-icon mr-2">
+                                <FontAwesomeIcon
+                                    icon="cog"
+                                    size="lg"
+                                    pull="right"
+                                ></FontAwesomeIcon>
+                            </span>
+                            <span className="clickable-icon" onClick={onDelete}>
+                                <FontAwesomeIcon
+                                    icon="trash-alt"
+                                    size="lg"
+                                    pull="right"
+                                ></FontAwesomeIcon>
+                            </span>
+                        </>
+                    )}
+                </>
+            ) : (
+                <>
+                    {showExtras && (
+                        <>
+                            {task.complete ? (
+                                <>
+                                    <span className="clickable-icon mr-2">
+                                        <FontAwesomeIcon
+                                            icon="cog"
+                                            size="lg"
+                                            pull="right"
+                                        ></FontAwesomeIcon>
+                                    </span>
+                                    <span
+                                        className="clickable-icon"
+                                        onClick={onDelete}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon="trash-alt"
+                                            size="lg"
+                                            pull="right"
+                                        ></FontAwesomeIcon>
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span
+                                        className="clickable-icon mr-2"
+                                        onClick={onSetPinned}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon="thumbtack"
+                                            size="lg"
+                                            pull="right"
+                                        ></FontAwesomeIcon>
+                                    </span>
+                                    <span className="clickable-icon mr-2">
+                                        <FontAwesomeIcon
+                                            icon="cog"
+                                            size="lg"
+                                            pull="right"
+                                        ></FontAwesomeIcon>
+                                    </span>
+                                    <span
+                                        className="clickable-icon"
+                                        onClick={onDelete}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon="trash-alt"
+                                            size="lg"
+                                            pull="right"
+                                        ></FontAwesomeIcon>
+                                    </span>
+                                </>
+                            )}
+                        </>
+                    )}
                 </>
             )}
         </ListGroup.Item>

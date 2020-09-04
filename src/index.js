@@ -8,9 +8,10 @@ import {
     faTrashAlt,
     faThumbtack,
     faCog,
+    faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faTrashAlt, faThumbtack, faCog);
+library.add(faTrashAlt, faThumbtack, faCog, faPlus);
 
 ReactDOM.render(
     <React.StrictMode>

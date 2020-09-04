@@ -8,8 +8,14 @@ import useScript from "./hooks/useScript";
 
 function App() {
     return (
-        <Container>
-            <TaskList />
+        <Container
+            style={{ height: "100vh" }}
+            className="d-flex align-items-center"
+        >
+            <div className="d-inline mx-auto">
+                <h1 className="text-center">Todo</h1>
+                <TaskList />
+            </div>
         </Container>
     );
 }

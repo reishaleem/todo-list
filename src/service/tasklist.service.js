@@ -22,6 +22,11 @@ const toggleTaskComplete = (taskListId, taskId) => {
     return axios.put(API_URL + `/${taskListId}/${taskId}/toggle_complete`);
 };
 
+const toggleTaskPinned = (taskListId, taskId) => {
+    console.log(API_URL + `/${taskListId}/${taskId}/toggle_pinned`);
+    return axios.put(API_URL + `/${taskListId}/${taskId}/toggle_pinned`);
+};
+
 const deleteTask = (taskListId, taskId) => {
     console.log(API_URL + `/${taskListId}/${taskId}/delete`);
     return axios.delete(API_URL + `/${taskListId}/${taskId}/delete`);
@@ -32,5 +37,6 @@ export default {
     getWikiTaskList,
     addTask,
     toggleTaskComplete,
+    toggleTaskPinned,
     deleteTask,
 };
