@@ -55,7 +55,7 @@ export default () => {
         tasks.tasks.forEach((task) => {
             if (task.pinned) {
                 setPinnedTaskList((oldList) => [...oldList, task]);
-            } else if (task.completed) {
+            } else if (task.complete) {
                 setCompletedTaskList((oldList) => [...oldList, task]);
             } else if (moment(task.dueDate).isBefore(moment(), "day")) {
                 setOverdueTaskList((oldList) => [...oldList, task]);
@@ -130,6 +130,7 @@ export default () => {
                 setMessage(response.data.message);
                 setSuccessful(true);
                 setTaskList(response.data);
+                //setCategorizedLists(response.data); // can't do this, or we just add a bunch of duplicates. Need to implement a method where it finds the list that the task WAS on, removes it, then adds it to its new list. It's similar to the one we have, but it takes just ONE task, not a whole list
                 console.log(response);
                 setTaskListLoaded(true);
             },
