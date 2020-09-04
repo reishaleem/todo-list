@@ -83,6 +83,104 @@ export default () => {
         });
     }
 
+    // returns the filtered old list, without the task anymore
+    // this is only for already existing tasks
+    function reCategorizeSingleTask(task, listTaskWasIn, listTaskWasInName) {
+        const newList = listTaskWasIn.filter((t) => t.id !== task.id);
+        if (listTaskWasInName === "pinned") {
+            setPinnedTaskList(newList);
+        } else if (listTaskWasInName === "overdue") {
+            setOverdueTaskList(newList);
+        } else if (listTaskWasInName === "priority") {
+            setPriorityTaskList(newList);
+        } else if (listTaskWasInName === "short") {
+            setShortTermTaskList(newList);
+        } else if (listTaskWasInName === "long") {
+            setLongTermTaskList(newList);
+        } else {
+            setCompletedTaskList(newList);
+        }
+
+        console.log(newList);
+        if (task.pinned) {
+            setPinnedTaskList((oldList) => [...oldList, task]);
+        } else if (task.complete) {
+            setCompletedTaskList((oldList) => [...oldList, task]);
+        } else if (moment(task.dueDate).isBefore(moment(), "day")) {
+            setOverdueTaskList((oldList) => [...oldList, task]);
+        } else if (
+            moment(task.dueDate).isBetween(
+                moment(),
+                moment().add(7, "days"),
+                "day",
+                "[]"
+            )
+        ) {
+            setPriorityTaskList((oldList) => [...oldList, task]);
+        } else if (
+            moment(task.dueDate).isBetween(
+                moment().add(7, "days"),
+                moment().add(1, "month"),
+                "day",
+                "(]"
+            )
+        ) {
+            setShortTermTaskList((oldList) => [...oldList, task]);
+        } else {
+            setLongTermTaskList((oldList) => [...oldList, task]);
+        }
+    }
+
+    // for a single task that was just added
+    function categorizeNewTask(task) {
+        if (task.pinned) {
+            setPinnedTaskList((oldList) => [...oldList, task]);
+        } else if (task.complete) {
+            setCompletedTaskList((oldList) => [...oldList, task]);
+        } else if (moment(task.dueDate).isBefore(moment(), "day")) {
+            setOverdueTaskList((oldList) => [...oldList, task]);
+        } else if (
+            moment(task.dueDate).isBetween(
+                moment(),
+                moment().add(7, "days"),
+                "day",
+                "[]"
+            )
+        ) {
+            setPriorityTaskList((oldList) => [...oldList, task]);
+        } else if (
+            moment(task.dueDate).isBetween(
+                moment().add(7, "days"),
+                moment().add(1, "month"),
+                "day",
+                "(]"
+            )
+        ) {
+            setShortTermTaskList((oldList) => [...oldList, task]);
+        } else {
+            setLongTermTaskList((oldList) => [...oldList, task]);
+        }
+    }
+
+    // for when a task is deleted
+    function deleteTaskFromList(taskId, listTaskWasIn, listTaskWasInName) {
+        const newList = listTaskWasIn.filter((t) => t.id !== taskId);
+
+        if (listTaskWasInName === "pinned") {
+            setPinnedTaskList(newList);
+        } else if (listTaskWasInName === "overdue") {
+            setOverdueTaskList(newList);
+        } else if (listTaskWasInName === "priority") {
+            setPriorityTaskList(newList);
+        } else if (listTaskWasInName === "short") {
+            setShortTermTaskList(newList);
+        } else if (listTaskWasInName === "long") {
+            setLongTermTaskList(newList);
+        } else {
+            setCompletedTaskList(newList);
+        }
+    }
+
     function onChangeNewTaskName(e) {
         setNewTaskName(e.target.value);
     }
@@ -101,8 +199,10 @@ export default () => {
             (response) => {
                 setMessage(response.data.message);
                 setSuccessful(true);
-                setTaskList(response.data);
                 console.log(response);
+                setTaskList(response.data.taskList);
+                categorizeNewTask(response.data.updatedTask);
+
                 setTaskListLoaded(true);
             },
             (error) => {
@@ -122,7 +222,7 @@ export default () => {
     // we would call the task service. We have the task list id, with taskList, then we send the id of the specific task here
     // the question here is whether this would be the delete or if it would be the set complete....ie if we want a 'completed'
     // section separate from the deleted
-    function onSetTaskComplete(data, taskId) {
+    function onSetTaskComplete(data, taskId, listTaskWasIn, listTaskWasInName) {
         setTaskListLoaded(false);
 
         TaskService.toggleTaskComplete(taskList.id, taskId).then(
@@ -131,6 +231,12 @@ export default () => {
                 setSuccessful(true);
                 setTaskList(response.data);
                 //setCategorizedLists(response.data); // can't do this, or we just add a bunch of duplicates. Need to implement a method where it finds the list that the task WAS on, removes it, then adds it to its new list. It's similar to the one we have, but it takes just ONE task, not a whole list
+                // should *maybe* add a check on this filter to ensure it only has length one, even though we know for sure it will be true?
+                reCategorizeSingleTask(
+                    response.data.tasks.filter((task) => task.id === taskId)[0],
+                    listTaskWasIn,
+                    listTaskWasInName
+                );
                 console.log(response);
                 setTaskListLoaded(true);
             },
@@ -148,7 +254,7 @@ export default () => {
         );
     }
 
-    function onDeleteTask(taskId) {
+    function onDeleteTask(taskId, listTaskWasIn, listTaskWasInName) {
         setTaskListLoaded(false);
 
         TaskService.deleteTask(taskList.id, taskId).then(
@@ -156,6 +262,7 @@ export default () => {
                 setMessage(response.data.message);
                 setSuccessful(true);
                 setTaskList(response.data);
+                deleteTaskFromList(taskId, listTaskWasIn, listTaskWasInName);
                 console.log(response);
                 setTaskListLoaded(true);
             },
@@ -173,13 +280,6 @@ export default () => {
         );
     }
 
-    //console.log(newTaskDueDate);
-
-    // try to show pinned, overdue, and priorty on first page
-    // then short term button
-    // then long term button
-    // then complete button
-    // can we add these buttons in the top right so that we can shift between the lists somehow?
     return (
         <Container fluid>
             <Tab.Container id="todo-pills" defaultActiveKey="priority">
@@ -262,6 +362,7 @@ export default () => {
                                 {taskListLoaded &&
                                     taskList.tasks &&
                                     pinnedTaskList.map((task, i) => {
+                                        // WE NEED TO ADD THE PARAMETER FOR LIST THE TASK WAS ON FOR ON SET COMPLETE AND ON DELETE AND STUFF FOR EVERYTHING
                                         return (
                                             <Task
                                                 taskName={task.task}
@@ -269,11 +370,17 @@ export default () => {
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
-                                                        task.id
+                                                        task.id,
+                                                        pinnedTaskList,
+                                                        "pinned"
                                                     )
                                                 }
                                                 onDelete={() =>
-                                                    onDeleteTask(task.id)
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        pinnedTaskList,
+                                                        "pinned"
+                                                    )
                                                 }
                                                 key={i}
                                                 className="pinned"
@@ -290,14 +397,20 @@ export default () => {
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
-                                                        task.id
+                                                        task.id,
+                                                        overDueTaskList,
+                                                        "overdue"
                                                     )
                                                 }
                                                 onDelete={() =>
-                                                    onDeleteTask(task.id)
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        overDueTaskList,
+                                                        "overdue"
+                                                    )
                                                 }
                                                 key={i}
-                                                className="pinned"
+                                                className="overdue"
                                             />
                                         );
                                     })}
@@ -311,14 +424,19 @@ export default () => {
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
-                                                        task.id
+                                                        task.id,
+                                                        priorityTaskList,
+                                                        "priority"
                                                     )
                                                 }
                                                 onDelete={() =>
-                                                    onDeleteTask(task.id)
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        priorityTaskList,
+                                                        "priority"
+                                                    )
                                                 }
                                                 key={i}
-                                                className="pinned"
                                             />
                                         );
                                     })}
@@ -334,14 +452,19 @@ export default () => {
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
-                                                        task.id
+                                                        task.id,
+                                                        shortTermTaskList,
+                                                        "short"
                                                     )
                                                 }
                                                 onDelete={() =>
-                                                    onDeleteTask(task.id)
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        shortTermTaskList,
+                                                        "short"
+                                                    )
                                                 }
                                                 key={i}
-                                                className="pinned"
                                             />
                                         );
                                     })}
@@ -357,14 +480,19 @@ export default () => {
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
-                                                        task.id
+                                                        task.id,
+                                                        longTermTaskList,
+                                                        "long"
                                                     )
                                                 }
                                                 onDelete={() =>
-                                                    onDeleteTask(task.id)
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        longTermTaskList,
+                                                        "long"
+                                                    )
                                                 }
                                                 key={i}
-                                                className="pinned"
                                             />
                                         );
                                     })}
@@ -380,14 +508,20 @@ export default () => {
                                                 onSetComplete={(data) =>
                                                     onSetTaskComplete(
                                                         data,
-                                                        task.id
+                                                        task.id,
+                                                        completedTaskList,
+                                                        "completed"
                                                     )
                                                 }
                                                 onDelete={() =>
-                                                    onDeleteTask(task.id)
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        completedTaskList,
+                                                        "completed"
+                                                    )
                                                 }
                                                 key={i}
-                                                className="pinned"
+                                                className="completed"
                                             />
                                         );
                                     })}
