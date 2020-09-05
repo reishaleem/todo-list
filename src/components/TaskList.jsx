@@ -38,9 +38,8 @@ export default () => {
     const [successful, setSuccessful] = useState(false);
     const [message, setMessage] = useState("");
 
-    const [pinnedTaskList, setPinnedTaskList] = useState([]);
-    const [overDueTaskList, setOverdueTaskList] = useState([]);
     const [priorityTaskList, setPriorityTaskList] = useState([]);
+
     const [shortTermTaskList, setShortTermTaskList] = useState([]);
     const [longTermTaskList, setLongTermTaskList] = useState([]);
     const [completedTaskList, setCompletedTaskList] = useState([]);
@@ -56,19 +55,11 @@ export default () => {
 
     function setCategorizedLists(tasks) {
         tasks.tasks.forEach((task) => {
-            if (task.pinned) {
-                setPinnedTaskList((oldList) => [...oldList, task]);
-            } else if (task.complete) {
+            if (task.complete) {
                 setCompletedTaskList((oldList) => [...oldList, task]);
-            } else if (moment(task.dueDate).isBefore(moment(), "day")) {
-                setOverdueTaskList((oldList) => [...oldList, task]);
             } else if (
-                moment(task.dueDate).isBetween(
-                    moment(),
-                    moment().add(7, "days"),
-                    "day",
-                    "[]"
-                )
+                task.pinned ||
+                moment(task.dueDate).isBefore(moment().add(7, "days"), "day")
             ) {
                 setPriorityTaskList((oldList) => [...oldList, task]);
             } else if (
@@ -86,15 +77,36 @@ export default () => {
         });
     }
 
+    // this is not consistent with equals. Just to note.
+    function compareTaskDates(task1, task2) {
+        const date1 = task1.dueDate;
+        const date2 = task2.dueDate;
+
+        let comparison = 0;
+        if (moment(task1.dueDate).isBefore(moment(task2.dueDate), "day")) {
+            comparison = -1;
+        } else if (
+            moment(task1.dueDate).isAfter(moment(task2.dueDate), "day")
+        ) {
+            comparison = 1;
+        }
+
+        return comparison;
+    }
+
+    function sortPriorityList(priorityList) {
+        const pinnedList = priorityList.filter((task) => task.pinned);
+        const nonPinnedList = priorityList.filter((task) => !task.pinned);
+        nonPinnedList.sort(compareTaskDates);
+        return pinnedList.concat(nonPinnedList);
+    }
+
     // returns the filtered old list, without the task anymore
     // this is only for already existing tasks
+    // TODO
     function reCategorizeSingleTask(task, listTaskWasIn, listTaskWasInName) {
         const newList = listTaskWasIn.filter((t) => t.id !== task.id);
-        if (listTaskWasInName === "pinned") {
-            setPinnedTaskList(newList);
-        } else if (listTaskWasInName === "overdue") {
-            setOverdueTaskList(newList);
-        } else if (listTaskWasInName === "priority") {
+        if (listTaskWasInName === "priority") {
             setPriorityTaskList(newList);
         } else if (listTaskWasInName === "short") {
             setShortTermTaskList(newList);
@@ -105,19 +117,11 @@ export default () => {
         }
 
         console.log(newList);
-        if (task.pinned) {
-            setPinnedTaskList((oldList) => [...oldList, task]);
-        } else if (task.complete) {
+        if (task.complete) {
             setCompletedTaskList((oldList) => [...oldList, task]);
-        } else if (moment(task.dueDate).isBefore(moment(), "day")) {
-            setOverdueTaskList((oldList) => [...oldList, task]);
         } else if (
-            moment(task.dueDate).isBetween(
-                moment(),
-                moment().add(7, "days"),
-                "day",
-                "[]"
-            )
+            task.pinned ||
+            moment(task.dueDate).isBefore(moment().add(7, "days"), "day")
         ) {
             setPriorityTaskList((oldList) => [...oldList, task]);
         } else if (
@@ -136,19 +140,11 @@ export default () => {
 
     // for a single task that was just added
     function categorizeNewTask(task) {
-        if (task.pinned) {
-            setPinnedTaskList((oldList) => [...oldList, task]);
-        } else if (task.complete) {
+        if (task.complete) {
             setCompletedTaskList((oldList) => [...oldList, task]);
-        } else if (moment(task.dueDate).isBefore(moment(), "day")) {
-            setOverdueTaskList((oldList) => [...oldList, task]);
         } else if (
-            moment(task.dueDate).isBetween(
-                moment(),
-                moment().add(7, "days"),
-                "day",
-                "[]"
-            )
+            task.pinned ||
+            moment(task.dueDate).isBefore(moment().add(7, "days"), "day")
         ) {
             setPriorityTaskList((oldList) => [...oldList, task]);
         } else if (
@@ -166,14 +162,11 @@ export default () => {
     }
 
     // for when a task is deleted
+    // TODO
     function deleteTaskFromList(taskId, listTaskWasIn, listTaskWasInName) {
         const newList = listTaskWasIn.filter((t) => t.id !== taskId);
 
-        if (listTaskWasInName === "pinned") {
-            setPinnedTaskList(newList);
-        } else if (listTaskWasInName === "overdue") {
-            setOverdueTaskList(newList);
-        } else if (listTaskWasInName === "priority") {
+        if (listTaskWasInName === "priority") {
             setPriorityTaskList(newList);
         } else if (listTaskWasInName === "short") {
             setShortTermTaskList(newList);
@@ -257,7 +250,13 @@ export default () => {
         );
     }
 
-    function onSetTaskPinned(data, taskId, listTaskWasIn, listTaskWasInName) {
+    function onSetTaskPinned(
+        data,
+        taskId,
+        listTaskWasIn,
+        listTaskWasInName,
+        task
+    ) {
         setTaskListLoaded(false);
 
         TaskService.toggleTaskPinned(taskList.id, taskId).then(
@@ -267,6 +266,7 @@ export default () => {
                 setTaskList(response.data);
                 //setCategorizedLists(response.data); // can't do this, or we just add a bunch of duplicates. Need to implement a method where it finds the list that the task WAS on, removes it, then adds it to its new list. It's similar to the one we have, but it takes just ONE task, not a whole list
                 // should *maybe* add a check on this filter to ensure it only has length one, even though we know for sure it will be true?
+                console.log(task);
                 reCategorizeSingleTask(
                     response.data.tasks.filter((task) => task.id === taskId)[0],
                     listTaskWasIn,
@@ -315,16 +315,37 @@ export default () => {
         );
     }
 
-    const [offset, setOffset] = useState(0);
-    const [activePageNum, setActivePageNum] = useState(1);
-    function handlePageChange(pageNumber) {
+    const [priorityOffset, setPriorityOffset] = useState(0);
+    const [priorityActivePageNum, setPriorityActivePageNum] = useState(1);
+
+    const [shortOffset, setShortOffset] = useState(0);
+    const [shortActivePageNum, setShortActivePageNum] = useState(1);
+
+    const [longOffset, setLongOffset] = useState(0);
+    const [longActivePageNum, setLongActivePageNum] = useState(1);
+
+    const [completedOffset, setCompletedOffset] = useState(0);
+    const [completedActivePageNum, setCompletedActivePageNum] = useState(1);
+
+    function handlePageChange(pageNumber, offset) {
         setTaskListLoaded(false);
-        setActivePageNum(pageNumber);
-        setOffset((pageNumber - 1) * 5);
+        const newOffset = (pageNumber - 1) * 5;
+        if (offset == "priority") {
+            setPriorityActivePageNum(pageNumber);
+            setPriorityOffset(newOffset);
+        } else if (offset == "short") {
+            setShortActivePageNum(pageNumber);
+            setShortOffset(newOffset);
+        } else if (offset == "long") {
+            setLongActivePageNum(pageNumber);
+            setLongOffset(newOffset);
+        } else {
+            setCompletedActivePageNum(pageNumber);
+            setCompletedOffset(newOffset);
+        }
+
         setTaskListLoaded(true);
     }
-
-    // NOTE: You cannot be pinned when you are set complete, so we need to make sure that we make it so you can't pin a complete task, and when u set complete, it sets pinned to false
 
     return (
         <Tab.Container
@@ -409,78 +430,12 @@ export default () => {
                         <Tab.Pane eventKey="priority">
                             {taskListLoaded && taskList.tasks && (
                                 <>
-                                    {pinnedTaskList.map((task, i) => {
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        pinnedTaskList,
-                                                        "pinned"
-                                                    )
-                                                }
-                                                onSetPinned={(data) =>
-                                                    onSetTaskPinned(
-                                                        data,
-                                                        task.id,
-                                                        pinnedTaskList,
-                                                        "pinned"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        pinnedTaskList,
-                                                        "pinned"
-                                                    )
-                                                }
-                                                key={i}
-                                                className="pinned"
-                                            />
-                                        );
-                                    })}
-                                    {overDueTaskList.map((task, i) => {
-                                        return (
-                                            <Task
-                                                task={task}
-                                                onSetComplete={(data) =>
-                                                    onSetTaskComplete(
-                                                        data,
-                                                        task.id,
-                                                        overDueTaskList,
-                                                        "overdue"
-                                                    )
-                                                }
-                                                onSetPinned={(data) =>
-                                                    onSetTaskPinned(
-                                                        data,
-                                                        task.id,
-                                                        overDueTaskList,
-                                                        "overdue"
-                                                    )
-                                                }
-                                                onDelete={() =>
-                                                    onDeleteTask(
-                                                        task.id,
-                                                        overDueTaskList,
-                                                        "overdue"
-                                                    )
-                                                }
-                                                key={i}
-                                                className="overdue"
-                                            />
-                                        );
-                                    })}
-                                    {priorityTaskList
-                                        .slice(offset, offset + 5)
+                                    {sortPriorityList(priorityTaskList)
+                                        .slice(
+                                            priorityOffset,
+                                            priorityOffset + 5
+                                        )
                                         .map((task, i) => {
-                                            console.log(
-                                                Math.ceil(
-                                                    priorityTaskList.length / 5
-                                                )
-                                            );
                                             return (
                                                 <Task
                                                     task={task}
@@ -515,8 +470,13 @@ export default () => {
                                         totalItemsCount={
                                             priorityTaskList.length
                                         }
-                                        activePage={activePageNum}
-                                        onChange={handlePageChange}
+                                        activePage={priorityActivePageNum}
+                                        onChange={(pageNumber) =>
+                                            handlePageChange(
+                                                pageNumber,
+                                                "priority"
+                                            )
+                                        }
                                         itemsCountPerPage={5}
                                         itemClass="page-item"
                                         linkClass="page-link"
@@ -528,110 +488,179 @@ export default () => {
                             )}
                         </Tab.Pane>
                         <Tab.Pane eventKey="short">
-                            {taskListLoaded &&
-                                taskList.tasks &&
-                                shortTermTaskList.map((task, i) => {
-                                    return (
-                                        <Task
-                                            task={task}
-                                            onSetComplete={(data) =>
-                                                onSetTaskComplete(
-                                                    data,
-                                                    task.id,
-                                                    shortTermTaskList,
-                                                    "short"
-                                                )
-                                            }
-                                            onSetPinned={(data) =>
-                                                onSetTaskPinned(
-                                                    data,
-                                                    task.id,
-                                                    shortTermTaskList,
-                                                    "short"
-                                                )
-                                            }
-                                            onDelete={() =>
-                                                onDeleteTask(
-                                                    task.id,
-                                                    shortTermTaskList,
-                                                    "short"
-                                                )
-                                            }
-                                            key={i}
-                                        />
-                                    );
-                                })}
+                            {taskListLoaded && taskList.tasks && (
+                                <>
+                                    {shortTermTaskList
+                                        .sort(compareTaskDates)
+                                        .slice(shortOffset, shortOffset + 5)
+                                        .map((task, i) => {
+                                            return (
+                                                <Task
+                                                    task={task}
+                                                    onSetComplete={(data) =>
+                                                        onSetTaskComplete(
+                                                            data,
+                                                            task.id,
+                                                            shortTermTaskList,
+                                                            "short"
+                                                        )
+                                                    }
+                                                    onSetPinned={(data) =>
+                                                        onSetTaskPinned(
+                                                            data,
+                                                            task.id,
+                                                            shortTermTaskList,
+                                                            "short"
+                                                        )
+                                                    }
+                                                    onDelete={() =>
+                                                        onDeleteTask(
+                                                            task.id,
+                                                            shortTermTaskList,
+                                                            "short"
+                                                        )
+                                                    }
+                                                    key={i}
+                                                />
+                                            );
+                                        })}
+                                    <Pagination
+                                        totalItemsCount={
+                                            shortTermTaskList.length
+                                        }
+                                        activePage={shortActivePageNum}
+                                        onChange={(pageNumber) =>
+                                            handlePageChange(
+                                                pageNumber,
+                                                "short"
+                                            )
+                                        }
+                                        itemsCountPerPage={5}
+                                        itemClass="page-item"
+                                        linkClass="page-link"
+                                        pageRangeDisplayed={1}
+                                        hideFirstLastPages={true}
+                                        innerClass="pagination justify-content-end"
+                                    />
+                                </>
+                            )}
                         </Tab.Pane>
                         <Tab.Pane eventKey="long">
-                            {taskListLoaded &&
-                                taskList.tasks &&
-                                longTermTaskList.map((task, i) => {
-                                    return (
-                                        <Task
-                                            task={task}
-                                            onSetComplete={(data) =>
-                                                onSetTaskComplete(
-                                                    data,
-                                                    task.id,
-                                                    longTermTaskList,
-                                                    "long"
-                                                )
-                                            }
-                                            onSetPinned={(data) =>
-                                                onSetTaskPinned(
-                                                    data,
-                                                    task.id,
-                                                    longTermTaskList,
-                                                    "long"
-                                                )
-                                            }
-                                            onDelete={() =>
-                                                onDeleteTask(
-                                                    task.id,
-                                                    longTermTaskList,
-                                                    "long"
-                                                )
-                                            }
-                                            key={i}
-                                        />
-                                    );
-                                })}
+                            {taskListLoaded && taskList.tasks && (
+                                <>
+                                    {longTermTaskList
+                                        .sort(compareTaskDates)
+                                        .slice(longOffset, longOffset + 5)
+                                        .map((task, i) => {
+                                            return (
+                                                <Task
+                                                    task={task}
+                                                    onSetComplete={(data) =>
+                                                        onSetTaskComplete(
+                                                            data,
+                                                            task.id,
+                                                            longTermTaskList,
+                                                            "long"
+                                                        )
+                                                    }
+                                                    onSetPinned={(data) =>
+                                                        onSetTaskPinned(
+                                                            data,
+                                                            task.id,
+                                                            longTermTaskList,
+                                                            "long"
+                                                        )
+                                                    }
+                                                    onDelete={() =>
+                                                        onDeleteTask(
+                                                            task.id,
+                                                            longTermTaskList,
+                                                            "long"
+                                                        )
+                                                    }
+                                                    key={i}
+                                                />
+                                            );
+                                        })}
+                                    <Pagination
+                                        totalItemsCount={
+                                            longTermTaskList.length
+                                        }
+                                        activePage={longActivePageNum}
+                                        onChange={(pageNumber) =>
+                                            handlePageChange(pageNumber, "long")
+                                        }
+                                        itemsCountPerPage={5}
+                                        itemClass="page-item"
+                                        linkClass="page-link"
+                                        pageRangeDisplayed={1}
+                                        hideFirstLastPages={true}
+                                        innerClass="pagination justify-content-end"
+                                    />
+                                </>
+                            )}
                         </Tab.Pane>
                         <Tab.Pane eventKey="completed">
-                            {taskListLoaded &&
-                                taskList.tasks &&
-                                completedTaskList.map((task, i) => {
-                                    return (
-                                        <Task
-                                            task={task}
-                                            onSetComplete={(data) =>
-                                                onSetTaskComplete(
-                                                    data,
-                                                    task.id,
-                                                    completedTaskList,
-                                                    "completed"
-                                                )
-                                            }
-                                            onSetPinned={(data) =>
-                                                onSetTaskPinned(
-                                                    data,
-                                                    task.id,
-                                                    completedTaskList,
-                                                    "completed"
-                                                )
-                                            }
-                                            onDelete={() =>
-                                                onDeleteTask(
-                                                    task.id,
-                                                    completedTaskList,
-                                                    "completed"
-                                                )
-                                            }
-                                            key={i}
-                                            className="completed"
-                                        />
-                                    );
-                                })}
+                            {taskListLoaded && taskList.tasks && (
+                                <>
+                                    {completedTaskList
+                                        .sort(compareTaskDates)
+                                        .slice(
+                                            completedOffset,
+                                            completedOffset + 5
+                                        )
+                                        .map((task, i) => {
+                                            return (
+                                                <Task
+                                                    task={task}
+                                                    onSetComplete={(data) =>
+                                                        onSetTaskComplete(
+                                                            data,
+                                                            task.id,
+                                                            completedTaskList,
+                                                            "completed"
+                                                        )
+                                                    }
+                                                    onSetPinned={(data) =>
+                                                        onSetTaskPinned(
+                                                            data,
+                                                            task.id,
+                                                            completedTaskList,
+                                                            "completed"
+                                                        )
+                                                    }
+                                                    onDelete={() =>
+                                                        onDeleteTask(
+                                                            task.id,
+                                                            completedTaskList,
+                                                            "completed"
+                                                        )
+                                                    }
+                                                    key={i}
+                                                    className="completed"
+                                                />
+                                            );
+                                        })}
+                                    <Pagination
+                                        totalItemsCount={
+                                            completedTaskList.length
+                                        }
+                                        activePage={completedActivePageNum}
+                                        onChange={(pageNumber) =>
+                                            handlePageChange(
+                                                pageNumber,
+                                                "completed"
+                                            )
+                                        }
+                                        itemsCountPerPage={5}
+                                        itemClass="page-item"
+                                        linkClass="page-link"
+                                        pageRangeDisplayed={1}
+                                        hideFirstLastPages={true}
+                                        innerClass="pagination justify-content-end"
+                                    />
+                                </>
+                            )}
                         </Tab.Pane>
                     </Tab.Content>
                 </Card.Body>

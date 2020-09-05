@@ -50,6 +50,10 @@
     text-decoration: line-through;
 }
 
+.overdue {
+    color: red;
+}
+
 .btn-group-toggle .active {
     background-color: transparent !important;
     color: red !important;

@@ -20,6 +20,9 @@ export default ({ task, onSetComplete, onDelete, onSetPinned }) => {
     // we can see about fading a task out, rather than abruptly going to Completed or Deleted
     // also need to deal with the settings (ie editing the task name and due date. Maybe we just do some sort of onDoubleClick?)
     // also need to add pagination
+
+    const overdue =
+        !task.complete && moment(task.dueDate).isBefore(moment(), "day");
     return (
         <ListGroup.Item
             className="border-0 d-flex align-items-center"
@@ -46,7 +49,11 @@ export default ({ task, onSetComplete, onDelete, onSetPinned }) => {
                 ></ToggleButton>
             </ButtonGroup>
 
-            <p className={`px-3 my-0 ${task.complete ? "complete " : ""}`}>
+            <p
+                className={`px-3 my-0 ${task.complete ? "complete " : ""}${
+                    overdue ? "overdue " : ""
+                }`}
+            >
                 {task.task + " "}
                 <br />
                 <small className="text-muted">
