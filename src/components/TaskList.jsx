@@ -1,41 +1,29 @@
 import React, { useState, useEffect } from "react";
 import TaskService from "../service/tasklist.service";
-import {
-    Form,
-    Container,
-    Col,
-    Button,
-    Card,
-    Accordion,
-    Nav,
-    Tab,
-    Tabs,
-    Row,
-} from "react-bootstrap";
+import Form from "react-bootstrap/Form";
+import Col from "react-bootstrap/Col";
+import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import Nav from "react-bootstrap/Nav";
+import Tab from "react-bootstrap/tab";
 import Badge from "@material-ui/core/Badge";
+import CircularProgress from "@material-ui/core/CircularProgress";
 import { useForm, Controller } from "react-hook-form";
 import Task from "./Task";
-import DatePicker from "./DatePicker";
 import ReactDatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Pagination from "react-js-pagination";
-import { fas } from "@fortawesome/free-solid-svg-icons";
 
 export default () => {
     const { register, handleSubmit, control, errors } = useForm();
 
     const [newTaskName, setNewTaskName] = useState("");
 
-    const [taskList, setTaskList] = useState({
-        id: "1",
-        tasks: [
-            { id: "1", task: "get eggs" },
-            { id: "2", task: "testing" },
-        ],
-    }); // using a default value for now, until we link up backend
-    const [taskListLoading, setTaskListLoading] = useState(false);
-    const [taskListLoaded, setTaskListLoaded] = useState(true);
+    const [taskList, setTaskList] = useState({}); // using a default value for now, until we link up backend
+    const [taskListLoading, setTaskListLoading] = useState(true);
+    const [taskListLoaded, setTaskListLoaded] = useState(false);
     const [successful, setSuccessful] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -49,8 +37,8 @@ export default () => {
         TaskService.getUniverseTaskList(4).then((response) => {
             setCategorizedLists(response.data);
             setTaskList(response.data);
-            setTaskListLoading(false);
             setTaskListLoaded(true);
+            setTaskListLoading(false);
         });
     }, []);
 
@@ -104,7 +92,6 @@ export default () => {
 
     // returns the filtered old list, without the task anymore
     // this is only for already existing tasks
-    // TODO
     function reCategorizeSingleTask(task, listTaskWasIn, listTaskWasInName) {
         const newList = listTaskWasIn.filter((t) => t.id !== task.id);
         if (listTaskWasInName === "priority") {
@@ -163,7 +150,6 @@ export default () => {
     }
 
     // for when a task is deleted
-    // TODO
     function deleteTaskFromList(taskId, listTaskWasIn, listTaskWasInName) {
         const newList = listTaskWasIn.filter((t) => t.id !== taskId);
 
@@ -184,8 +170,9 @@ export default () => {
 
     // we would call the task service instead of this
     function onCreateNewTask(data) {
+        setTaskListLoading(true);
         setTaskListLoaded(false);
-        console.log(data);
+        setNewTaskName("");
 
         TaskService.addTask(
             taskList.id,
@@ -199,8 +186,6 @@ export default () => {
                 console.log(response);
                 setTaskList(response.data.taskList);
                 categorizeNewTask(response.data.updatedTask);
-
-                setTaskListLoaded(true);
             },
             (error) => {
                 const resMessage =
@@ -214,12 +199,16 @@ export default () => {
                 setSuccessful(false);
             }
         );
+
+        setTaskListLoaded(true);
+        setTaskListLoading(false);
     }
 
     // we would call the task service. We have the task list id, with taskList, then we send the id of the specific task here
     // the question here is whether this would be the delete or if it would be the set complete....ie if we want a 'completed'
     // section separate from the deleted
     function onSetTaskComplete(data, taskId, listTaskWasIn, listTaskWasInName) {
+        setTaskListLoading(true);
         setTaskListLoaded(false);
 
         TaskService.toggleTaskComplete(taskList.id, taskId).then(
@@ -236,6 +225,7 @@ export default () => {
                 );
                 console.log(response);
                 setTaskListLoaded(true);
+                setTaskListLoading(false);
             },
             (error) => {
                 const resMessage =
@@ -258,6 +248,7 @@ export default () => {
         listTaskWasInName,
         task
     ) {
+        setTaskListLoading(true);
         setTaskListLoaded(false);
 
         TaskService.toggleTaskPinned(taskList.id, taskId).then(
@@ -275,6 +266,7 @@ export default () => {
                 );
                 console.log(response);
                 setTaskListLoaded(true);
+                setTaskListLoading(false);
             },
             (error) => {
                 const resMessage =
@@ -291,6 +283,7 @@ export default () => {
     }
 
     function onDeleteTask(taskId, listTaskWasIn, listTaskWasInName) {
+        setTaskListLoading(true);
         setTaskListLoaded(false);
 
         TaskService.deleteTask(taskList.id, taskId).then(
@@ -301,6 +294,7 @@ export default () => {
                 deleteTaskFromList(taskId, listTaskWasIn, listTaskWasInName);
                 console.log(response);
                 setTaskListLoaded(true);
+                setTaskListLoading(false);
             },
             (error) => {
                 const resMessage =
@@ -433,303 +427,344 @@ export default () => {
                 </Card.Header>
 
                 <Card.Body>
-                    <Form onSubmit={handleSubmit(onCreateNewTask)}>
-                        <Form.Row>
-                            <Col md={8}>
-                                <Form.Control
-                                    type="text"
-                                    name="newTaskName"
-                                    placeholder="add new task"
-                                    maxLength="50"
-                                    value={newTaskName}
-                                    onChange={onChangeNewTaskName}
-                                    ref={register({
-                                        required: true,
-                                        maxLength: 50,
-                                    })}
-                                />
-                                {errors.newTaskName && (
-                                    <Form.Text>
-                                        This field is required
-                                    </Form.Text>
-                                )}
-                            </Col>
-                            <Col md={3}>
-                                <Controller
-                                    control={control}
-                                    name="newTaskDueDate"
-                                    render={({ onChange, onBlur, value }) => (
-                                        <ReactDatePicker
-                                            onChange={onChange}
-                                            onBlur={onBlur}
-                                            selected={value}
-                                            dateFormat="MMM/dd"
-                                            className="form-control"
-                                            isClearable
-                                            placeholderText="due"
+                    {taskListLoading && (
+                        <div className="text-center">
+                            <CircularProgress />
+                        </div>
+                    )}
+                    {taskListLoaded && (
+                        <>
+                            <Form
+                                onSubmit={handleSubmit(onCreateNewTask)}
+                                className="py-1"
+                            >
+                                <Form.Row>
+                                    <Col md={8}>
+                                        <Form.Control
+                                            type="text"
+                                            name="newTaskName"
+                                            placeholder="add new task"
+                                            maxLength="50"
+                                            value={newTaskName}
+                                            onChange={onChangeNewTaskName}
+                                            ref={register({
+                                                required: true,
+                                                maxLength: 50,
+                                            })}
                                         />
-                                    )}
-                                />
-                            </Col>
-                            <Col md={1}>
-                                <Button
-                                    variant="outline-dark"
-                                    type="submit"
-                                    style={{
-                                        padding: ".375rem .6rem",
-                                    }}
-                                >
-                                    <FontAwesomeIcon
-                                        icon="plus"
-                                        size="sm"
-                                    ></FontAwesomeIcon>
-                                </Button>
-                            </Col>
-                        </Form.Row>
-                    </Form>
-                    <Tab.Content>
-                        <Tab.Pane eventKey="priority">
-                            {taskListLoaded && taskList.tasks && (
-                                <>
-                                    {sortPriorityList(priorityTaskList)
-                                        .slice(
-                                            priorityOffset,
-                                            priorityOffset + 5
-                                        )
-                                        .map((task, i) => {
-                                            return (
-                                                <Task
-                                                    task={task}
-                                                    onSetComplete={(data) =>
-                                                        onSetTaskComplete(
-                                                            data,
-                                                            task.id,
-                                                            priorityTaskList,
-                                                            "priority"
-                                                        )
-                                                    }
-                                                    onSetPinned={(data) =>
-                                                        onSetTaskPinned(
-                                                            data,
-                                                            task.id,
-                                                            priorityTaskList,
-                                                            "priority"
-                                                        )
-                                                    }
-                                                    onDelete={() =>
-                                                        onDeleteTask(
-                                                            task.id,
-                                                            priorityTaskList,
-                                                            "priority"
-                                                        )
-                                                    }
-                                                    key={i}
+                                        {errors.newTaskName && (
+                                            <small>
+                                                Must be unempty and less than 50
+                                                characters
+                                            </small>
+                                        )}
+                                    </Col>
+                                    <Col md={3}>
+                                        <Controller
+                                            control={control}
+                                            name="newTaskDueDate"
+                                            render={({
+                                                onChange,
+                                                onBlur,
+                                                value,
+                                            }) => (
+                                                <ReactDatePicker
+                                                    onChange={onChange}
+                                                    onBlur={onBlur}
+                                                    selected={value}
+                                                    dateFormat="MMM/dd"
+                                                    className="form-control"
+                                                    isClearable
+                                                    placeholderText="due"
                                                 />
-                                            );
-                                        })}
+                                            )}
+                                        />
+                                    </Col>
+                                    <Col md={1}>
+                                        <Button
+                                            variant="outline-dark"
+                                            type="submit"
+                                            style={{
+                                                padding: ".375rem .6rem",
+                                            }}
+                                        >
+                                            <FontAwesomeIcon
+                                                icon="plus"
+                                                size="sm"
+                                            ></FontAwesomeIcon>
+                                        </Button>
+                                    </Col>
+                                </Form.Row>
+                            </Form>
+                            <Tab.Content>
+                                <Tab.Pane eventKey="priority">
+                                    {taskList.tasks && (
+                                        <>
+                                            {sortPriorityList(priorityTaskList)
+                                                .slice(
+                                                    priorityOffset,
+                                                    priorityOffset + 5
+                                                )
+                                                .map((task, i) => {
+                                                    return (
+                                                        <Task
+                                                            task={task}
+                                                            onSetComplete={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskComplete(
+                                                                    data,
+                                                                    task.id,
+                                                                    priorityTaskList,
+                                                                    "priority"
+                                                                )
+                                                            }
+                                                            onSetPinned={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskPinned(
+                                                                    data,
+                                                                    task.id,
+                                                                    priorityTaskList,
+                                                                    "priority"
+                                                                )
+                                                            }
+                                                            onDelete={() =>
+                                                                onDeleteTask(
+                                                                    task.id,
+                                                                    priorityTaskList,
+                                                                    "priority"
+                                                                )
+                                                            }
+                                                            key={i}
+                                                        />
+                                                    );
+                                                })}
 
-                                    <small className="text-muted">{`Showing ${
-                                        priorityOffset + 1
-                                    }-${priorityOffset + 5} of ${
-                                        priorityTaskList.length
-                                    }`}</small>
-                                    <Pagination
-                                        totalItemsCount={
-                                            priorityTaskList.length
-                                        }
-                                        activePage={priorityActivePageNum}
-                                        onChange={(pageNumber) =>
-                                            handlePageChange(
-                                                pageNumber,
-                                                "priority"
-                                            )
-                                        }
-                                        itemsCountPerPage={5}
-                                        itemClass="page-item"
-                                        linkClass="page-link"
-                                        pageRangeDisplayed={1}
-                                        hideFirstLastPages={true}
-                                        innerClass="pagination justify-content-end"
-                                    />
-                                </>
-                            )}
-                        </Tab.Pane>
-                        <Tab.Pane eventKey="short">
-                            {taskListLoaded && taskList.tasks && (
-                                <>
-                                    {shortTermTaskList
-                                        .sort(compareTaskDates)
-                                        .slice(shortOffset, shortOffset + 5)
-                                        .map((task, i) => {
-                                            return (
-                                                <Task
-                                                    task={task}
-                                                    onSetComplete={(data) =>
-                                                        onSetTaskComplete(
-                                                            data,
-                                                            task.id,
-                                                            shortTermTaskList,
-                                                            "short"
-                                                        )
-                                                    }
-                                                    onSetPinned={(data) =>
-                                                        onSetTaskPinned(
-                                                            data,
-                                                            task.id,
-                                                            shortTermTaskList,
-                                                            "short"
-                                                        )
-                                                    }
-                                                    onDelete={() =>
-                                                        onDeleteTask(
-                                                            task.id,
-                                                            shortTermTaskList,
-                                                            "short"
-                                                        )
-                                                    }
-                                                    key={i}
-                                                />
-                                            );
-                                        })}
-                                    <Pagination
-                                        totalItemsCount={
-                                            shortTermTaskList.length
-                                        }
-                                        activePage={shortActivePageNum}
-                                        onChange={(pageNumber) =>
-                                            handlePageChange(
-                                                pageNumber,
-                                                "short"
-                                            )
-                                        }
-                                        itemsCountPerPage={5}
-                                        itemClass="page-item"
-                                        linkClass="page-link"
-                                        pageRangeDisplayed={1}
-                                        hideFirstLastPages={true}
-                                        innerClass="pagination justify-content-end"
-                                    />
-                                </>
-                            )}
-                        </Tab.Pane>
-                        <Tab.Pane eventKey="long">
-                            {taskListLoaded && taskList.tasks && (
-                                <>
-                                    {longTermTaskList
-                                        .sort(compareTaskDates)
-                                        .slice(longOffset, longOffset + 5)
-                                        .map((task, i) => {
-                                            return (
-                                                <Task
-                                                    task={task}
-                                                    onSetComplete={(data) =>
-                                                        onSetTaskComplete(
-                                                            data,
-                                                            task.id,
-                                                            longTermTaskList,
-                                                            "long"
-                                                        )
-                                                    }
-                                                    onSetPinned={(data) =>
-                                                        onSetTaskPinned(
-                                                            data,
-                                                            task.id,
-                                                            longTermTaskList,
-                                                            "long"
-                                                        )
-                                                    }
-                                                    onDelete={() =>
-                                                        onDeleteTask(
-                                                            task.id,
-                                                            longTermTaskList,
-                                                            "long"
-                                                        )
-                                                    }
-                                                    key={i}
-                                                />
-                                            );
-                                        })}
-                                    <Pagination
-                                        totalItemsCount={
-                                            longTermTaskList.length
-                                        }
-                                        activePage={longActivePageNum}
-                                        onChange={(pageNumber) =>
-                                            handlePageChange(pageNumber, "long")
-                                        }
-                                        itemsCountPerPage={5}
-                                        itemClass="page-item"
-                                        linkClass="page-link"
-                                        pageRangeDisplayed={1}
-                                        hideFirstLastPages={true}
-                                        innerClass="pagination justify-content-end"
-                                    />
-                                </>
-                            )}
-                        </Tab.Pane>
-                        <Tab.Pane eventKey="completed">
-                            {taskListLoaded && taskList.tasks && (
-                                <>
-                                    {completedTaskList
-                                        .sort(compareTaskDates)
-                                        .slice(
-                                            completedOffset,
-                                            completedOffset + 5
-                                        )
-                                        .map((task, i) => {
-                                            return (
-                                                <Task
-                                                    task={task}
-                                                    onSetComplete={(data) =>
-                                                        onSetTaskComplete(
-                                                            data,
-                                                            task.id,
-                                                            completedTaskList,
-                                                            "completed"
-                                                        )
-                                                    }
-                                                    onSetPinned={(data) =>
-                                                        onSetTaskPinned(
-                                                            data,
-                                                            task.id,
-                                                            completedTaskList,
-                                                            "completed"
-                                                        )
-                                                    }
-                                                    onDelete={() =>
-                                                        onDeleteTask(
-                                                            task.id,
-                                                            completedTaskList,
-                                                            "completed"
-                                                        )
-                                                    }
-                                                    key={i}
-                                                    className="completed"
-                                                />
-                                            );
-                                        })}
-                                    <Pagination
-                                        totalItemsCount={
-                                            completedTaskList.length
-                                        }
-                                        activePage={completedActivePageNum}
-                                        onChange={(pageNumber) =>
-                                            handlePageChange(
-                                                pageNumber,
-                                                "completed"
-                                            )
-                                        }
-                                        itemsCountPerPage={5}
-                                        itemClass="page-item"
-                                        linkClass="page-link"
-                                        pageRangeDisplayed={1}
-                                        hideFirstLastPages={true}
-                                        innerClass="pagination justify-content-end"
-                                    />
-                                </>
-                            )}
-                        </Tab.Pane>
-                    </Tab.Content>
+                                            <Pagination
+                                                totalItemsCount={
+                                                    priorityTaskList.length
+                                                }
+                                                activePage={
+                                                    priorityActivePageNum
+                                                }
+                                                onChange={(pageNumber) =>
+                                                    handlePageChange(
+                                                        pageNumber,
+                                                        "priority"
+                                                    )
+                                                }
+                                                itemsCountPerPage={5}
+                                                itemClass="page-item"
+                                                linkClass="page-link"
+                                                pageRangeDisplayed={1}
+                                                hideFirstLastPages={true}
+                                                innerClass="pagination justify-content-end"
+                                            />
+                                        </>
+                                    )}
+                                </Tab.Pane>
+                                <Tab.Pane eventKey="short">
+                                    {taskList.tasks && (
+                                        <>
+                                            {shortTermTaskList
+                                                .sort(compareTaskDates)
+                                                .slice(
+                                                    shortOffset,
+                                                    shortOffset + 5
+                                                )
+                                                .map((task, i) => {
+                                                    return (
+                                                        <Task
+                                                            task={task}
+                                                            onSetComplete={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskComplete(
+                                                                    data,
+                                                                    task.id,
+                                                                    shortTermTaskList,
+                                                                    "short"
+                                                                )
+                                                            }
+                                                            onSetPinned={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskPinned(
+                                                                    data,
+                                                                    task.id,
+                                                                    shortTermTaskList,
+                                                                    "short"
+                                                                )
+                                                            }
+                                                            onDelete={() =>
+                                                                onDeleteTask(
+                                                                    task.id,
+                                                                    shortTermTaskList,
+                                                                    "short"
+                                                                )
+                                                            }
+                                                            key={i}
+                                                        />
+                                                    );
+                                                })}
+                                            <Pagination
+                                                totalItemsCount={
+                                                    shortTermTaskList.length
+                                                }
+                                                activePage={shortActivePageNum}
+                                                onChange={(pageNumber) =>
+                                                    handlePageChange(
+                                                        pageNumber,
+                                                        "short"
+                                                    )
+                                                }
+                                                itemsCountPerPage={5}
+                                                itemClass="page-item"
+                                                linkClass="page-link"
+                                                pageRangeDisplayed={1}
+                                                hideFirstLastPages={true}
+                                                innerClass="pagination justify-content-end"
+                                            />
+                                        </>
+                                    )}
+                                </Tab.Pane>
+                                <Tab.Pane eventKey="long">
+                                    {taskList.tasks && (
+                                        <>
+                                            {longTermTaskList
+                                                .sort(compareTaskDates)
+                                                .slice(
+                                                    longOffset,
+                                                    longOffset + 5
+                                                )
+                                                .map((task, i) => {
+                                                    return (
+                                                        <Task
+                                                            task={task}
+                                                            onSetComplete={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskComplete(
+                                                                    data,
+                                                                    task.id,
+                                                                    longTermTaskList,
+                                                                    "long"
+                                                                )
+                                                            }
+                                                            onSetPinned={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskPinned(
+                                                                    data,
+                                                                    task.id,
+                                                                    longTermTaskList,
+                                                                    "long"
+                                                                )
+                                                            }
+                                                            onDelete={() =>
+                                                                onDeleteTask(
+                                                                    task.id,
+                                                                    longTermTaskList,
+                                                                    "long"
+                                                                )
+                                                            }
+                                                            key={i}
+                                                        />
+                                                    );
+                                                })}
+                                            <Pagination
+                                                totalItemsCount={
+                                                    longTermTaskList.length
+                                                }
+                                                activePage={longActivePageNum}
+                                                onChange={(pageNumber) =>
+                                                    handlePageChange(
+                                                        pageNumber,
+                                                        "long"
+                                                    )
+                                                }
+                                                itemsCountPerPage={5}
+                                                itemClass="page-item"
+                                                linkClass="page-link"
+                                                pageRangeDisplayed={1}
+                                                hideFirstLastPages={true}
+                                                innerClass="pagination justify-content-end"
+                                            />
+                                        </>
+                                    )}
+                                </Tab.Pane>
+                                <Tab.Pane eventKey="completed">
+                                    {taskList.tasks && (
+                                        <>
+                                            {completedTaskList
+                                                .sort(compareTaskDates)
+                                                .slice(
+                                                    completedOffset,
+                                                    completedOffset + 5
+                                                )
+                                                .map((task, i) => {
+                                                    return (
+                                                        <Task
+                                                            task={task}
+                                                            onSetComplete={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskComplete(
+                                                                    data,
+                                                                    task.id,
+                                                                    completedTaskList,
+                                                                    "completed"
+                                                                )
+                                                            }
+                                                            onSetPinned={(
+                                                                data
+                                                            ) =>
+                                                                onSetTaskPinned(
+                                                                    data,
+                                                                    task.id,
+                                                                    completedTaskList,
+                                                                    "completed"
+                                                                )
+                                                            }
+                                                            onDelete={() =>
+                                                                onDeleteTask(
+                                                                    task.id,
+                                                                    completedTaskList,
+                                                                    "completed"
+                                                                )
+                                                            }
+                                                            key={i}
+                                                            className="completed"
+                                                        />
+                                                    );
+                                                })}
+                                            <Pagination
+                                                totalItemsCount={
+                                                    completedTaskList.length
+                                                }
+                                                activePage={
+                                                    completedActivePageNum
+                                                }
+                                                onChange={(pageNumber) =>
+                                                    handlePageChange(
+                                                        pageNumber,
+                                                        "completed"
+                                                    )
+                                                }
+                                                itemsCountPerPage={5}
+                                                itemClass="page-item"
+                                                linkClass="page-link"
+                                                pageRangeDisplayed={1}
+                                                hideFirstLastPages={true}
+                                                innerClass="pagination justify-content-end"
+                                            />
+                                        </>
+                                    )}
+                                </Tab.Pane>
+                            </Tab.Content>
+                        </>
+                    )}
                 </Card.Body>
             </Card>
         </Tab.Container>

@@ -57,7 +57,9 @@ export default ({ task, onSetComplete, onDelete, onSetPinned }) => {
                 {task.task + " "}
                 <br />
                 <small className="text-muted">
-                    {moment(task.dueDate).format("MMM Do")}
+                    {task.dueDate
+                        ? moment(task.dueDate).format("MMM Do")
+                        : "No due date"}
                 </small>
             </p>
 
