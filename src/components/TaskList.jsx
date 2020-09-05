@@ -12,6 +12,7 @@ import {
     Tabs,
     Row,
 } from "react-bootstrap";
+import Badge from "@material-ui/core/Badge";
 import { useForm, Controller } from "react-hook-form";
 import Task from "./Task";
 import DatePicker from "./DatePicker";
@@ -356,17 +357,77 @@ export default () => {
             <Card style={{ width: "30rem" }} className="align-middle mx-auto">
                 <Card.Header>
                     <Nav variant="pills">
-                        <Nav.Item>
-                            <Nav.Link eventKey="priority">Priority</Nav.Link>
+                        <Nav.Item className="py-1 px-2">
+                            <Badge
+                                badgeContent={priorityTaskList.length}
+                                color="secondary"
+                                max={9}
+                            >
+                                <Nav.Link
+                                    eventKey="priority"
+                                    style={{
+                                        fontSize: ".8rem",
+                                        border: "1px solid black",
+                                        lineHeight: "1",
+                                    }}
+                                >
+                                    Priority
+                                </Nav.Link>
+                            </Badge>
                         </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link eventKey="short">Short Term</Nav.Link>
+                        <Nav.Item className="py-1 px-2">
+                            <Badge
+                                badgeContent={shortTermTaskList.length}
+                                color="secondary"
+                                max={9}
+                            >
+                                <Nav.Link
+                                    eventKey="short"
+                                    style={{
+                                        fontSize: ".8rem",
+                                        border: "1px solid black",
+                                        lineHeight: "1",
+                                    }}
+                                >
+                                    Short Term
+                                </Nav.Link>
+                            </Badge>
                         </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link eventKey="long">Long Term</Nav.Link>
+                        <Nav.Item className="py-1 px-2">
+                            <Badge
+                                badgeContent={longTermTaskList.length}
+                                max={9}
+                                color="secondary"
+                            >
+                                <Nav.Link
+                                    eventKey="long"
+                                    style={{
+                                        fontSize: ".8rem",
+                                        border: "1px solid black",
+                                        lineHeight: "1",
+                                    }}
+                                >
+                                    Long Term
+                                </Nav.Link>
+                            </Badge>
                         </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link eventKey="completed">Completed</Nav.Link>
+                        <Nav.Item className="py-1 px-2">
+                            <Badge
+                                badgeContent={completedTaskList.length}
+                                color="secondary"
+                                max={9}
+                            >
+                                <Nav.Link
+                                    eventKey="completed"
+                                    style={{
+                                        fontSize: ".8rem",
+                                        border: "1px solid black",
+                                        lineHeight: "1",
+                                    }}
+                                >
+                                    Completed
+                                </Nav.Link>
+                            </Badge>
                         </Nav.Item>
                     </Nav>
                 </Card.Header>
@@ -466,6 +527,12 @@ export default () => {
                                                 />
                                             );
                                         })}
+
+                                    <small className="text-muted">{`Showing ${
+                                        priorityOffset + 1
+                                    }-${priorityOffset + 5} of ${
+                                        priorityTaskList.length
+                                    }`}</small>
                                     <Pagination
                                         totalItemsCount={
                                             priorityTaskList.length

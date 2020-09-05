@@ -54,6 +54,22 @@
     color: red;
 }
 
+/*
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    color: white !important;
+    background-color: black !important;
+}
+*/
+
+.notification-circle {
+    width: 36;
+    height: 36;
+    border-radius: 18;
+    background-color: red;
+    color: white;
+}
+
 .btn-group-toggle .active {
     background-color: transparent !important;
     color: red !important;
