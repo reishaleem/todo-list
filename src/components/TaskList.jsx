@@ -18,6 +18,8 @@ import DatePicker from "./DatePicker";
 import ReactDatePicker from "react-datepicker";
 import moment from "moment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Pagination from "react-js-pagination";
+import { fas } from "@fortawesome/free-solid-svg-icons";
 
 export default () => {
     const { register, handleSubmit, control, errors } = useForm();
@@ -45,8 +47,8 @@ export default () => {
 
     useEffect(() => {
         TaskService.getUniverseTaskList(4).then((response) => {
-            setTaskList(response.data);
             setCategorizedLists(response.data);
+            setTaskList(response.data);
             setTaskListLoading(false);
             setTaskListLoaded(true);
         });
@@ -313,6 +315,15 @@ export default () => {
         );
     }
 
+    const [offset, setOffset] = useState(0);
+    const [activePageNum, setActivePageNum] = useState(1);
+    function handlePageChange(pageNumber) {
+        setTaskListLoaded(false);
+        setActivePageNum(pageNumber);
+        setOffset((pageNumber - 1) * 5);
+        setTaskListLoaded(true);
+    }
+
     // NOTE: You cannot be pinned when you are set complete, so we need to make sure that we make it so you can't pin a complete task, and when u set complete, it sets pinned to false
 
     return (
@@ -396,107 +407,125 @@ export default () => {
                     </Form>
                     <Tab.Content>
                         <Tab.Pane eventKey="priority">
-                            {taskListLoaded &&
-                                taskList.tasks &&
-                                pinnedTaskList.map((task, i) => {
-                                    return (
-                                        <Task
-                                            task={task}
-                                            onSetComplete={(data) =>
-                                                onSetTaskComplete(
-                                                    data,
-                                                    task.id,
-                                                    pinnedTaskList,
-                                                    "pinned"
+                            {taskListLoaded && taskList.tasks && (
+                                <>
+                                    {pinnedTaskList.map((task, i) => {
+                                        return (
+                                            <Task
+                                                task={task}
+                                                onSetComplete={(data) =>
+                                                    onSetTaskComplete(
+                                                        data,
+                                                        task.id,
+                                                        pinnedTaskList,
+                                                        "pinned"
+                                                    )
+                                                }
+                                                onSetPinned={(data) =>
+                                                    onSetTaskPinned(
+                                                        data,
+                                                        task.id,
+                                                        pinnedTaskList,
+                                                        "pinned"
+                                                    )
+                                                }
+                                                onDelete={() =>
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        pinnedTaskList,
+                                                        "pinned"
+                                                    )
+                                                }
+                                                key={i}
+                                                className="pinned"
+                                            />
+                                        );
+                                    })}
+                                    {overDueTaskList.map((task, i) => {
+                                        return (
+                                            <Task
+                                                task={task}
+                                                onSetComplete={(data) =>
+                                                    onSetTaskComplete(
+                                                        data,
+                                                        task.id,
+                                                        overDueTaskList,
+                                                        "overdue"
+                                                    )
+                                                }
+                                                onSetPinned={(data) =>
+                                                    onSetTaskPinned(
+                                                        data,
+                                                        task.id,
+                                                        overDueTaskList,
+                                                        "overdue"
+                                                    )
+                                                }
+                                                onDelete={() =>
+                                                    onDeleteTask(
+                                                        task.id,
+                                                        overDueTaskList,
+                                                        "overdue"
+                                                    )
+                                                }
+                                                key={i}
+                                                className="overdue"
+                                            />
+                                        );
+                                    })}
+                                    {priorityTaskList
+                                        .slice(offset, offset + 5)
+                                        .map((task, i) => {
+                                            console.log(
+                                                Math.ceil(
+                                                    priorityTaskList.length / 5
                                                 )
-                                            }
-                                            onSetPinned={(data) =>
-                                                onSetTaskPinned(
-                                                    data,
-                                                    task.id,
-                                                    pinnedTaskList,
-                                                    "pinned"
-                                                )
-                                            }
-                                            onDelete={() =>
-                                                onDeleteTask(
-                                                    task.id,
-                                                    pinnedTaskList,
-                                                    "pinned"
-                                                )
-                                            }
-                                            key={i}
-                                            className="pinned"
-                                        />
-                                    );
-                                })}
-                            {taskListLoaded &&
-                                taskList.tasks &&
-                                overDueTaskList.map((task, i) => {
-                                    return (
-                                        <Task
-                                            task={task}
-                                            onSetComplete={(data) =>
-                                                onSetTaskComplete(
-                                                    data,
-                                                    task.id,
-                                                    overDueTaskList,
-                                                    "overdue"
-                                                )
-                                            }
-                                            onSetPinned={(data) =>
-                                                onSetTaskPinned(
-                                                    data,
-                                                    task.id,
-                                                    overDueTaskList,
-                                                    "overdue"
-                                                )
-                                            }
-                                            onDelete={() =>
-                                                onDeleteTask(
-                                                    task.id,
-                                                    overDueTaskList,
-                                                    "overdue"
-                                                )
-                                            }
-                                            key={i}
-                                            className="overdue"
-                                        />
-                                    );
-                                })}
-                            {taskListLoaded &&
-                                taskList.tasks &&
-                                priorityTaskList.map((task, i) => {
-                                    return (
-                                        <Task
-                                            task={task}
-                                            onSetComplete={(data) =>
-                                                onSetTaskComplete(
-                                                    data,
-                                                    task.id,
-                                                    priorityTaskList,
-                                                    "priority"
-                                                )
-                                            }
-                                            onSetPinned={(data) =>
-                                                onSetTaskPinned(
-                                                    data,
-                                                    task.id,
-                                                    priorityTaskList,
-                                                    "priority"
-                                                )
-                                            }
-                                            onDelete={() =>
-                                                onDeleteTask(
-                                                    task.id,
-                                                    priorityTaskList,
-                                                    "priority"
-                                                )
-                                            }
-                                            key={i}
-                                        />
-                                    );
-                                })}
+                                            );
+                                            return (
+                                                <Task
+                                                    task={task}
+                                                    onSetComplete={(data) =>
+                                                        onSetTaskComplete(
+                                                            data,
+                                                            task.id,
+                                                            priorityTaskList,
+                                                            "priority"
+                                                        )
+                                                    }
+                                                    onSetPinned={(data) =>
+                                                        onSetTaskPinned(
+                                                            data,
+                                                            task.id,
+                                                            priorityTaskList,
+                                                            "priority"
+                                                        )
+                                                    }
+                                                    onDelete={() =>
+                                                        onDeleteTask(
+                                                            task.id,
+                                                            priorityTaskList,
+                                                            "priority"
+                                                        )
+                                                    }
+                                                    key={i}
+                                                />
+                                            );
+                                        })}
+                                    <Pagination
+                                        totalItemsCount={
+                                            priorityTaskList.length
+                                        }
+                                        activePage={activePageNum}
+                                        onChange={handlePageChange}
+                                        itemsCountPerPage={5}
+                                        itemClass="page-item"
+                                        linkClass="page-link"
+                                        pageRangeDisplayed={1}
+                                        hideFirstLastPages={true}
+                                        innerClass="pagination justify-content-end"
+                                    />
+                                </>
+                            )}
                         </Tab.Pane>
                         <Tab.Pane eventKey="short">
                             {taskListLoaded &&

@@ -95,3 +95,7 @@
 .spacer {
     flex-grow: 1 !important;
 }
+
+.page-item.active {
+    display: none;
+}
