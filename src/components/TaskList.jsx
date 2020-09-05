@@ -21,14 +21,11 @@ export default () => {
 
     const [newTaskName, setNewTaskName] = useState("");
 
-    const [taskList, setTaskList] = useState({}); // using a default value for now, until we link up backend
+    const [taskList, setTaskList] = useState({});
     const [taskListLoading, setTaskListLoading] = useState(true);
     const [taskListLoaded, setTaskListLoaded] = useState(false);
-    const [successful, setSuccessful] = useState(false);
-    const [message, setMessage] = useState("");
 
     const [priorityTaskList, setPriorityTaskList] = useState([]);
-
     const [shortTermTaskList, setShortTermTaskList] = useState([]);
     const [longTermTaskList, setLongTermTaskList] = useState([]);
     const [completedTaskList, setCompletedTaskList] = useState([]);
@@ -68,9 +65,6 @@ export default () => {
 
     // this is not consistent with equals. Just to note.
     function compareTaskDates(task1, task2) {
-        const date1 = task1.dueDate;
-        const date2 = task2.dueDate;
-
         let comparison = 0;
         if (moment(task1.dueDate).isBefore(moment(task2.dueDate), "day")) {
             comparison = -1;
@@ -181,9 +175,6 @@ export default () => {
             false
         ).then(
             (response) => {
-                setMessage(response.data.message);
-                setSuccessful(true);
-                console.log(response);
                 setTaskList(response.data.taskList);
                 categorizeNewTask(response.data.updatedTask);
             },
@@ -194,9 +185,7 @@ export default () => {
                         error.response.data.message) ||
                     error.message ||
                     error.toString();
-
-                setMessage(resMessage);
-                setSuccessful(false);
+                console.log(resMessage);
             }
         );
 
@@ -213,8 +202,6 @@ export default () => {
 
         TaskService.toggleTaskComplete(taskList.id, taskId).then(
             (response) => {
-                setMessage(response.data.message);
-                setSuccessful(true);
                 setTaskList(response.data);
                 //setCategorizedLists(response.data); // can't do this, or we just add a bunch of duplicates. Need to implement a method where it finds the list that the task WAS on, removes it, then adds it to its new list. It's similar to the one we have, but it takes just ONE task, not a whole list
                 // should *maybe* add a check on this filter to ensure it only has length one, even though we know for sure it will be true?
@@ -235,8 +222,7 @@ export default () => {
                     error.message ||
                     error.toString();
 
-                setMessage(resMessage);
-                setSuccessful(false);
+                console.log(resMessage);
             }
         );
     }
@@ -253,8 +239,6 @@ export default () => {
 
         TaskService.toggleTaskPinned(taskList.id, taskId).then(
             (response) => {
-                setMessage(response.data.message);
-                setSuccessful(true);
                 setTaskList(response.data);
                 //setCategorizedLists(response.data); // can't do this, or we just add a bunch of duplicates. Need to implement a method where it finds the list that the task WAS on, removes it, then adds it to its new list. It's similar to the one we have, but it takes just ONE task, not a whole list
                 // should *maybe* add a check on this filter to ensure it only has length one, even though we know for sure it will be true?
@@ -276,8 +260,7 @@ export default () => {
                     error.message ||
                     error.toString();
 
-                setMessage(resMessage);
-                setSuccessful(false);
+                console.log(resMessage);
             }
         );
     }
@@ -288,8 +271,6 @@ export default () => {
 
         TaskService.deleteTask(taskList.id, taskId).then(
             (response) => {
-                setMessage(response.data.message);
-                setSuccessful(true);
                 setTaskList(response.data);
                 deleteTaskFromList(taskId, listTaskWasIn, listTaskWasInName);
                 console.log(response);
@@ -304,8 +285,7 @@ export default () => {
                     error.message ||
                     error.toString();
 
-                setMessage(resMessage);
-                setSuccessful(false);
+                console.log(resMessage);
             }
         );
     }
@@ -325,13 +305,13 @@ export default () => {
     function handlePageChange(pageNumber, offset) {
         setTaskListLoaded(false);
         const newOffset = (pageNumber - 1) * 5;
-        if (offset == "priority") {
+        if (offset === "priority") {
             setPriorityActivePageNum(pageNumber);
             setPriorityOffset(newOffset);
-        } else if (offset == "short") {
+        } else if (offset === "short") {
             setShortActivePageNum(pageNumber);
             setShortOffset(newOffset);
-        } else if (offset == "long") {
+        } else if (offset === "long") {
             setLongActivePageNum(pageNumber);
             setLongOffset(newOffset);
         } else {

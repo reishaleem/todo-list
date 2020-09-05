@@ -1,20 +1,10 @@
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import {
-    Form,
-    ListGroup,
-    Button,
-    ToggleButton,
-    ButtonGroup,
-} from "react-bootstrap";
+import { ListGroup, ToggleButton, ButtonGroup } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import moment from "moment";
 
 export default ({ task, onSetComplete, onDelete, onSetPinned }) => {
-    const { register, handleSubmit, errors } = useForm();
-
     const [checked, setChecked] = useState(task.complete);
-    const [pinned, setPinned] = useState(task.pinned);
     const [showExtras, setShowExtras] = useState(false);
 
     // we can see about fading a task out, rather than abruptly going to Completed or Deleted
